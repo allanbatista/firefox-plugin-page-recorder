@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Firefox Extension Workshop
+    url: https://extensionworkshop.com/documentation/develop/
+    about: Firefox extension documentation and platform guidance.
+

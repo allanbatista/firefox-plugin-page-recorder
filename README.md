@@ -1,24 +1,59 @@
 # Firefox Page Recorder
 
-Extensão simples para gravar a área visível da aba ativa e baixar o vídeo no fim, usando MP4 quando disponível e WebM/VP8 como fallback.
+Firefox extension that records the visible area of the active tab and downloads the result locally.
 
-## Como usar
+## Features
 
-1. Abra `about:debugging`.
-2. Clique em "This Firefox".
-3. Use "Load Temporary Add-on" e selecione `manifest.json`.
-4. Abra a página que você quer gravar.
-5. Clique no botão da extensão e inicie a gravação.
-6. Clique em parar para baixar o arquivo.
+- Records only the visible viewport of the active tab.
+- Prefers MP4/H.264 and falls back to WebM/VP8 when MP4 is unavailable.
+- Adjusts the encoder bitrate to the captured resolution.
+- Saves files with host-based names and timestamps.
 
-## Saída
+## Installation
 
-- Nome do arquivo: `dominio-timestamp.mp4` ou `dominio-timestamp.webm`
-- Formato: MP4 quando suportado; caso contrário WebM/VP8
-- Codec: H.264 ou VP8, conforme o suporte do Firefox/OS
-- Taxa fixa: 8 fps
-- Taxa de bits: ajustada pela resolução da captura
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click `Load Temporary Add-on`.
+3. Select `manifest.json`.
+4. Open the page you want to record.
+5. Click the extension button and start recording.
+6. Click stop to download the file.
 
-## Observação
+## Output
 
-Se o seu Firefox não tiver suporte de gravação MP4/H.264 neste sistema, a extensão tenta WebM/VP8. Se nenhum formato estiver disponível, mostra erro ao iniciar.
+- Filename: `domain-timestamp.mp4` or `domain-timestamp.webm`
+- Container: MP4 when supported, otherwise WebM
+- Codec: H.264 or VP8, depending on the Firefox and OS support
+- Capture rate: 8 fps
+- Bitrate: scaled from the capture resolution
+
+## Development
+
+This repository has no build step. Edit the files in the repository root and reload the temporary add-on in Firefox.
+
+Validation commands:
+
+```bash
+node --check background.js
+node --check popup.js
+jq empty manifest.json
+```
+
+## Project Layout
+
+```text
+background.js   Extension logic and recording pipeline
+popup.html      Popup markup
+popup.css       Popup styles
+popup.js        Popup state and messaging
+manifest.json   Firefox extension manifest
+```
+
+## Limitations
+
+- The extension records the visible area only.
+- Codec support depends on the installed Firefox build and operating system.
+- The popup UI is currently in Portuguese.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

@@ -3,6 +3,7 @@
   "name": "Firefox Page Recorder",
   "version": "0.1.0",
   "description": "Record the visible area of the active tab and download it as MP4 or WebM.",
+  "homepage_url": "https://github.com/allanbatista/firefox-page-recorder",
   "browser_specific_settings": {
     "gecko": {
       "id": "firefox-page-recorder@example.com"

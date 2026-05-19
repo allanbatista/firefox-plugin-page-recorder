@@ -1,4 +1,10 @@
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
 .codexpotter/
 node_modules/
 dist/
-
+web-ext-artifacts/
+*.xpi
