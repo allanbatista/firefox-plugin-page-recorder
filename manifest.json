@@ -1,0 +1,22 @@
+{
+  "manifest_version": 2,
+  "name": "Firefox Page Recorder",
+  "version": "0.1.0",
+  "description": "Record the visible area of the active tab and download it as an MP4.",
+  "permissions": [
+    "tabs",
+    "downloads",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_title": "Firefox Page Recorder",
+    "default_popup": "popup.html"
+  }
+}
+
