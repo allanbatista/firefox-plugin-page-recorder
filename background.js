@@ -1,8 +1,8 @@
 const FPS = 8;
 const FRAME_INTERVAL_MS = 1000 / FPS;
 const MP4_MIME_TYPES = [
-  "video/mp4;codecs=avc1.640028",
   "video/mp4;codecs=avc1.42E01E",
+  "video/mp4;codecs=avc1.640028",
   "video/mp4"
 ];
 
@@ -201,6 +201,13 @@ async function startRecording() {
     return snapshot();
   }
 
+  if (state.finishPromise) {
+    await state.finishPromise.catch(() => {});
+  }
+
+  state.sessionId += 1;
+  const sessionId = state.sessionId;
+
   const [tab] = await browser.tabs.query({
     active: true,
     currentWindow: true
@@ -217,7 +224,6 @@ async function startRecording() {
 
   const windowId = tab.windowId;
   const filename = filenameFromUrl(tab.url || tab.pendingUrl || "");
-  const sessionId = state.sessionId;
 
   try {
     await captureAndPaint(windowId, sessionId);
@@ -293,13 +299,14 @@ async function captureLoop(sessionId, windowId) {
 }
 
 async function stopRecording() {
+  state.sessionId += 1;
+
   if (!state.recording) {
-    return snapshot();
+    return state.finishPromise || snapshot();
   }
 
   const recorder = state.recorder;
   state.recording = false;
-  state.sessionId += 1;
 
   if (recorder && recorder.state !== "inactive") {
     recorder.stop();
