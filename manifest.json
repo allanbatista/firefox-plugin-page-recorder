@@ -2,7 +2,17 @@
   "manifest_version": 2,
   "name": "Firefox Page Recorder",
   "version": "0.1.0",
-  "description": "Record the visible area of the active tab and download it as an MP4.",
+  "description": "Record the visible area of the active tab and download it as MP4 or WebM.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox-page-recorder@example.com"
+    }
+  },
+  "web_accessible_resources": [
+    "popup.html",
+    "popup.css",
+    "popup.js"
+  ],
   "permissions": [
     "tabs",
     "downloads",
@@ -19,4 +29,3 @@
     "default_popup": "popup.html"
   }
 }
-

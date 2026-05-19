@@ -1,6 +1,6 @@
 # Firefox Page Recorder
 
-Extensão simples para gravar a área visível da aba ativa e baixar o vídeo no fim.
+Extensão simples para gravar a área visível da aba ativa e baixar o vídeo no fim, usando MP4 quando disponível e WebM/VP8 como fallback.
 
 ## Como usar
 
@@ -13,12 +13,12 @@ Extensão simples para gravar a área visível da aba ativa e baixar o vídeo no
 
 ## Saída
 
-- Nome do arquivo: `dominio-timestamp.mp4`
-- Formato: MP4
-- Codec: H.264 quando o Firefox/OS suportar gravação MP4
+- Nome do arquivo: `dominio-timestamp.mp4` ou `dominio-timestamp.webm`
+- Formato: MP4 quando suportado; caso contrário WebM/VP8
+- Codec: H.264 ou VP8, conforme o suporte do Firefox/OS
 - Taxa fixa: 8 fps
+- Taxa de bits: ajustada pela resolução da captura
 
 ## Observação
 
-Se o seu Firefox não tiver suporte de gravação MP4/H.264 neste sistema, a extensão mostra erro ao iniciar.
-
+Se o seu Firefox não tiver suporte de gravação MP4/H.264 neste sistema, a extensão tenta WebM/VP8. Se nenhum formato estiver disponível, mostra erro ao iniciar.

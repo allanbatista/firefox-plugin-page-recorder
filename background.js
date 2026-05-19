@@ -1,10 +1,27 @@
 const FPS = 8;
 const FRAME_INTERVAL_MS = 1000 / FPS;
-const MP4_MIME_TYPES = [
-  "video/mp4;codecs=avc1.42E01E",
-  "video/mp4;codecs=avc1.640028",
-  "video/mp4"
+const RECORDING_FORMATS = [
+  {
+    label: "MP4/H.264",
+    extension: "mp4",
+    mimeTypes: [
+      "video/mp4;codecs=avc1.42E01E",
+      "video/mp4;codecs=avc1.640028",
+      "video/mp4"
+    ]
+  },
+  {
+    label: "WebM/VP8",
+    extension: "webm",
+    mimeTypes: [
+      "video/webm;codecs=vp8",
+      "video/webm"
+    ]
+  }
 ];
+const VIDEO_BITS_PER_PIXEL_PER_FRAME = 0.35;
+const MIN_VIDEO_BITS_PER_SECOND = 2_500_000;
+const MAX_VIDEO_BITS_PER_SECOND = 16_000_000;
 
 const state = {
   recording: false,
@@ -12,6 +29,8 @@ const state = {
   windowId: null,
   filename: "",
   mimeType: "",
+  formatLabel: "",
+  videoBitsPerSecond: 0,
   startedAt: 0,
   recorder: null,
   stream: null,
@@ -53,19 +72,42 @@ function slugifyHost(hostname) {
     .replace(/^-+|-+$/g, "") || "recording";
 }
 
-function filenameFromUrl(url) {
+function filenameFromUrl(url, extension = "mp4") {
   try {
-    return `${slugifyHost(new URL(url).hostname)}-${timestamp(new Date())}.mp4`;
+    return `${slugifyHost(new URL(url).hostname)}-${timestamp(new Date())}.${extension}`;
   } catch {
-    return `recording-${timestamp(new Date())}.mp4`;
+    return `recording-${timestamp(new Date())}.${extension}`;
   }
 }
 
-function chooseMimeType() {
-  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
+function normalizeUrl(url) {
+  try {
+    const parsed = new URL(url);
+    parsed.hash = "";
+    return parsed.href;
+  } catch {
     return "";
   }
-  return MP4_MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+}
+
+function chooseRecordingFormat() {
+  if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
+    return null;
+  }
+  for (const format of RECORDING_FORMATS) {
+    const mimeType = format.mimeTypes.find((type) => MediaRecorder.isTypeSupported(type));
+    if (mimeType) {
+      return { ...format, mimeType };
+    }
+  }
+  return null;
+}
+
+function estimateVideoBitsPerSecond(width, height, mimeType) {
+  const pixels = Math.max(1, width) * Math.max(1, height);
+  const formatMultiplier = mimeType.startsWith("video/webm") ? 1.15 : 1;
+  const estimated = Math.round(pixels * FPS * VIDEO_BITS_PER_PIXEL_PER_FRAME * formatMultiplier);
+  return Math.max(MIN_VIDEO_BITS_PER_SECOND, Math.min(MAX_VIDEO_BITS_PER_SECOND, estimated));
 }
 
 function sleep(ms) {
@@ -86,16 +128,14 @@ function ensureCanvas(bitmap) {
       throw new Error("Canvas 2D context unavailable.");
     }
   }
-  if (!state.canvas.width || !state.canvas.height) {
-    state.canvas.width = bitmap.width;
-    state.canvas.height = bitmap.height;
-  }
+  // Canvas defaults to 300x150; size it to the captured frame before streaming.
+  state.canvas.width = bitmap.width;
+  state.canvas.height = bitmap.height;
 }
 
 async function captureAndPaint(windowId, sessionId) {
   const dataUrl = await browser.tabs.captureVisibleTab(windowId, {
-    format: "jpeg",
-    quality: 92
+    format: "png"
   });
   const bitmap = await bitmapFromDataUrl(dataUrl);
   if (state.sessionId !== sessionId) {
@@ -155,6 +195,8 @@ function resetArtifacts() {
   state.windowId = null;
   state.filename = "";
   state.mimeType = "";
+  state.formatLabel = "";
+  state.videoBitsPerSecond = 0;
   state.startedAt = 0;
   state.recorder = null;
   state.stream = null;
@@ -172,6 +214,8 @@ function snapshot() {
     recording: state.recording,
     filename: state.filename,
     mimeType: state.mimeType,
+    formatLabel: state.formatLabel,
+    videoBitsPerSecond: state.videoBitsPerSecond,
     startedAt: state.startedAt,
     windowId: state.windowId,
     fps: FPS
@@ -196,7 +240,26 @@ async function finalizeDownload() {
   };
 }
 
-async function startRecording() {
+async function findTargetTab(targetUrl) {
+  if (targetUrl) {
+    const normalizedTargetUrl = normalizeUrl(targetUrl);
+    const tabs = await browser.tabs.query({});
+    const targetTab = tabs.find((tab) => normalizeUrl(tab.url || tab.pendingUrl || "") === normalizedTargetUrl);
+    if (targetTab) {
+      return targetTab;
+    }
+    throw new Error("Aba de destino não encontrada.");
+  }
+
+  const [tab] = await browser.tabs.query({
+    active: true,
+    currentWindow: true
+  });
+
+  return tab;
+}
+
+async function startRecording(request = {}) {
   if (state.recording) {
     return snapshot();
   }
@@ -208,22 +271,19 @@ async function startRecording() {
   state.sessionId += 1;
   const sessionId = state.sessionId;
 
-  const [tab] = await browser.tabs.query({
-    active: true,
-    currentWindow: true
-  });
+  const tab = await findTargetTab(request.targetUrl);
 
   if (!tab || typeof tab.windowId !== "number") {
     throw new Error("Nenhuma aba ativa encontrada.");
   }
 
-  const mimeType = chooseMimeType();
-  if (!mimeType) {
-    throw new Error("Este Firefox não suporta gravação MP4/H.264 neste sistema.");
+  const format = chooseRecordingFormat();
+  if (!format) {
+    throw new Error("Este Firefox não suporta gravação de vídeo neste sistema.");
   }
 
   const windowId = tab.windowId;
-  const filename = filenameFromUrl(tab.url || tab.pendingUrl || "");
+  const filename = filenameFromUrl(tab.url || tab.pendingUrl || "", format.extension);
 
   try {
     await captureAndPaint(windowId, sessionId);
@@ -234,11 +294,16 @@ async function startRecording() {
     state.recording = true;
     state.windowId = windowId;
     state.filename = filename;
-    state.mimeType = mimeType;
+    state.mimeType = format.mimeType;
+    state.formatLabel = format.label;
+    state.videoBitsPerSecond = estimateVideoBitsPerSecond(state.canvas.width, state.canvas.height, format.mimeType);
     state.startedAt = Date.now();
     state.chunks = [];
     state.stream = state.canvas.captureStream(FPS);
-    state.recorder = new MediaRecorder(state.stream, { mimeType });
+    state.recorder = new MediaRecorder(state.stream, {
+      mimeType: format.mimeType,
+      videoBitsPerSecond: state.videoBitsPerSecond
+    });
     state.finishPromise = new Promise((resolve, reject) => {
       state.finishResolve = resolve;
       state.finishReject = reject;
@@ -325,7 +390,7 @@ browser.runtime.onMessage.addListener((message) => {
   }
 
   if (message.type === "start-recording") {
-    return startRecording().catch((error) => ({
+    return startRecording(message).catch((error) => ({
       ...snapshot(),
       error: error.message || String(error)
     }));
