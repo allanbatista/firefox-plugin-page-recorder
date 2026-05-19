@@ -15,7 +15,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Validate JavaScript
         run: |
@@ -24,4 +24,3 @@ jobs:
 
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"
-
