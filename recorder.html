@@ -16,12 +16,15 @@
     <main class="shell">
       <p class="eyebrow">Firefox Page Recorder</p>
       <h1 id="title">Preparando gravação</h1>
-      <p id="detail" class="detail">Aguardando a permissão do microfone.</p>
+      <p id="detail" class="detail">Aguardando a permissão de áudio.</p>
 
       <button id="stop" class="button secondary" hidden>
         <img class="button-icon" src="assets/icons/icon-pause.svg" alt="" aria-hidden="true">
-        <span>Finalizar e baixar WebM</span>
+        <span id="stopLabel">Finalizar e baixar</span>
       </button>
+
+      <div id="transcript" class="transcript" aria-live="polite"></div>
+      <p id="interim" class="interim"></p>
 
       <p id="status" class="status" aria-live="polite"></p>
     </main>

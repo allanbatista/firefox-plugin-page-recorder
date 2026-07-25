@@ -5,7 +5,8 @@ Firefox extension that records the visible area of the active tab, with optional
 ## Features
 
 - Records only the visible viewport of the active tab (`captureVisibleTab`).
-- Optional microphone audio.
+- Optional microphone and meeting-loopback audio, recorded as separate Deepgram channels.
+- Optional real-time transcription with speaker labels, downloaded as a .txt next to the video.
 - Waits for a 3-second countdown before recording starts.
 - Downloads WebM via the native MediaRecorder pipeline (VP8 + Opus).
 - Remembers the last FPS choice locally.
@@ -47,16 +48,36 @@ jq empty manifest.json
 ```text
 popup.html      Popup markup
 popup.css       Popup and recorder window styles
-popup.js        Settings, recorder window launcher
+popup.js        Settings, device picker, recorder window launcher
 recorder.html   Recorder window markup
-recorder.js     Recording pipeline (capture, mic, encode, download)
+recorder.js     Recording pipeline (capture, audio, Deepgram, encode, download)
+pcm-worklet.js  AudioWorklet turning the mixer output into linear16 for Deepgram
 manifest.json   Firefox extension manifest
 ```
+
+## Meeting audio and live transcription
+
+Firefox cannot capture tab or system audio ([bug 1541425](https://bugzilla.mozilla.org/show_bug.cgi?id=1541425)), so the other participants have to reach the extension as a regular audio input:
+
+```bash
+# PipeWire / PulseAudio: the monitor of your output device is already a source
+pactl list short sources | grep monitor
+```
+
+Pick that `Monitor of ...` entry as **Áudio da reunião (loopback)** in the popup, and your headset as **Microfone**. Both are recorded into the WebM, and each is sent to Deepgram as its own channel — so your voice is never confused with theirs.
+
+Speaker labels:
+
+- `Você` — the mic channel.
+- `Reunião · Participante N` — the loopback channel, split by Deepgram's diarization.
+
+Set **Transcrição** to `Deepgram (tempo real)` and paste an API key. The transcript renders live in the recorder window and downloads as `domain-timestamp.txt` next to the video, timestamps aligned to the recording.
 
 ## Limitations
 
 - Records the visible area of the active tab only (not a free window picker).
 - Tab/system audio is not captured: Firefox blocks `getDisplayMedia` in extension pages for this flow.
+- The recorder window does not close by itself after stopping: files are handed to the browser as `blob:` downloads, and destroying the document would cancel one still in flight. Dismiss it with its own button.
 - Recording runs in a small dedicated window: Firefox refuses `getUserMedia` in background pages, and a mic track dies with the document that created it. Closing that window discards the take; use its stop button (or the toolbar popup) to finish.
 - Microphone audio is optional and prompts for permission on the recorder window.
 - Codec support depends on the installed Firefox build and operating system.

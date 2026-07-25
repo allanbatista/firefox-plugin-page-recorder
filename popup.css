@@ -84,9 +84,11 @@ h1 {
   color: var(--muted);
 }
 
-select {
+select,
+input {
   appearance: none;
   width: 100%;
+  box-sizing: border-box;
   border: 1px solid var(--panel-border);
   border-radius: 14px;
   padding: 12px 14px;
@@ -95,9 +97,46 @@ select {
   font: inherit;
 }
 
-select:disabled {
+select:disabled,
+input:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.transcript {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  background: var(--panel-strong);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.transcript:empty {
+  display: none;
+}
+
+.transcript .line {
+  margin: 0 0 8px;
+}
+
+.transcript .who {
+  color: #fca5a5;
+  font-weight: 700;
+}
+
+.interim {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  min-height: 1em;
+}
+
+.field[hidden] {
+  display: none;
 }
 
 .button {

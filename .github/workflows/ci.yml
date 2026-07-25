@@ -21,6 +21,7 @@ jobs:
         run: |
           node --check popup.js
           node --check recorder.js
+          node --check pcm-worklet.js
 
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"

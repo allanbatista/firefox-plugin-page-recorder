@@ -10,15 +10,34 @@
     <main class="shell">
       <p class="eyebrow">Firefox Page Recorder</p>
       <h1 id="title">Pronto para gravar</h1>
-      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui o microfone.</p>
+      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em WebM, com transcrição opcional em tempo real.</p>
 
       <section class="controls" aria-label="Configurações de gravação">
-        <label class="field" for="audioMode">
-          <span>Áudio</span>
-          <select id="audioMode">
-            <option value="none">Sem áudio</option>
-            <option value="mic" selected>Microfone</option>
+        <label class="field" for="micDevice">
+          <span>Microfone (você)</span>
+          <select id="micDevice"></select>
+        </label>
+
+        <label class="field" for="meetingDevice">
+          <span>Áudio da reunião (loopback)</span>
+          <select id="meetingDevice"></select>
+        </label>
+
+        <button id="unlockDevices" class="button secondary" hidden>
+          <span>Liberar acesso ao áudio</span>
+        </button>
+
+        <label class="field" for="transcribe">
+          <span>Transcrição</span>
+          <select id="transcribe">
+            <option value="off">Desligada</option>
+            <option value="deepgram">Deepgram (tempo real)</option>
           </select>
+        </label>
+
+        <label class="field" for="deepgramKey" id="deepgramKeyField" hidden>
+          <span>Chave da Deepgram</span>
+          <input id="deepgramKey" type="password" autocomplete="off" spellcheck="false" placeholder="Token da API">
         </label>
 
         <label class="field" for="captureFps">
@@ -40,7 +59,7 @@
 
       <button id="stopRecording" class="button secondary" hidden>
         <img class="button-icon" src="assets/icons/icon-pause.svg" alt="" aria-hidden="true">
-        <span>Finalizar e baixar WebM</span>
+        <span>Finalizar e baixar</span>
       </button>
 
       <p id="status" class="status" aria-live="polite"></p>

@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Firefox Page Recorder",
   "version": "0.1.0",
-  "description": "Record the visible area of the active tab with optional audio, a 3-second countdown, saved FPS, and WebM export.",
+  "description": "Record the visible area of the active tab with mic and meeting audio, optional real-time transcription with speaker labels, and WebM export.",
   "homepage_url": "https://github.com/allanbatista/firefox-page-recorder",
   "browser_specific_settings": {
     "gecko": {
@@ -16,7 +16,6 @@
   ],
   "permissions": [
     "tabs",
-    "downloads",
     "storage",
     "<all_urls>"
   ],
