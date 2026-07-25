@@ -10,11 +10,41 @@
     <main class="shell">
       <p class="eyebrow">Firefox Page Recorder</p>
       <h1 id="title">Pronto para gravar</h1>
-      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em MP4.</p>
-      <button id="toggle" class="button">Iniciar gravação</button>
+      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui o microfone.</p>
+
+      <section class="controls" aria-label="Configurações de gravação">
+        <label class="field" for="audioMode">
+          <span>Áudio</span>
+          <select id="audioMode">
+            <option value="none">Sem áudio</option>
+            <option value="mic" selected>Microfone</option>
+          </select>
+        </label>
+
+        <label class="field" for="captureFps">
+          <span>Frames por segundo</span>
+          <select id="captureFps">
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
+          </select>
+        </label>
+      </section>
+
+      <button id="startRecording" class="button primary">
+        <img class="button-icon" src="assets/icons/icon-record.svg" alt="" aria-hidden="true">
+        <span id="startLabel">Iniciar gravação</span>
+      </button>
+
+      <button id="stopRecording" class="button secondary" hidden>
+        <img class="button-icon" src="assets/icons/icon-pause.svg" alt="" aria-hidden="true">
+        <span>Finalizar e baixar WebM</span>
+      </button>
+
       <p id="status" class="status" aria-live="polite"></p>
     </main>
     <script src="popup.js"></script>
   </body>
 </html>
-

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>Gravando</title>
+    <link rel="stylesheet" href="popup.css">
+    <style>
+      html,
+      body {
+        width: auto;
+        min-height: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <p class="eyebrow">Firefox Page Recorder</p>
+      <h1 id="title">Preparando gravação</h1>
+      <p id="detail" class="detail">Aguardando a permissão do microfone.</p>
+
+      <button id="stop" class="button secondary" hidden>
+        <img class="button-icon" src="assets/icons/icon-pause.svg" alt="" aria-hidden="true">
+        <span>Finalizar e baixar WebM</span>
+      </button>
+
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script src="recorder.js"></script>
+  </body>
+</html>

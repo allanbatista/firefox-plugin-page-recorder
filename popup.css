@@ -1,24 +1,25 @@
 :root {
   color-scheme: dark;
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-  --bg: #0e1016;
-  --panel: rgba(255, 255, 255, 0.06);
-  --panel-strong: rgba(255, 255, 255, 0.1);
+  --bg: #0b0e16;
+  --panel: rgba(18, 22, 32, 0.94);
+  --panel-strong: rgba(255, 255, 255, 0.08);
+  --panel-border: rgba(255, 255, 255, 0.08);
   --text: #f4f6fb;
-  --muted: #9ea7b7;
+  --muted: #a7afbf;
   --accent: #ef4444;
   --accent-strong: #dc2626;
-  --shadow: rgba(0, 0, 0, 0.35);
+  --shadow: rgba(0, 0, 0, 0.4);
 }
 
 html,
 body {
   margin: 0;
-  width: 320px;
-  min-height: 240px;
+  width: 360px;
+  min-height: 420px;
   background:
-    radial-gradient(circle at top, rgba(239, 68, 68, 0.18), transparent 55%),
-    linear-gradient(180deg, #121521 0%, #0e1016 100%);
+    radial-gradient(circle at top, rgba(239, 68, 68, 0.18), transparent 45%),
+    linear-gradient(180deg, #131826 0%, #0b0e16 100%);
   color: var(--text);
 }
 
@@ -32,9 +33,9 @@ body {
   flex-direction: column;
   gap: 12px;
   padding: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
   margin: 12px;
-  border-radius: 20px;
+  border: 1px solid var(--panel-border);
+  border-radius: 24px;
   background: var(--panel);
   box-shadow: 0 20px 40px var(--shadow);
 }
@@ -49,8 +50,8 @@ body {
 
 h1 {
   margin: 0;
-  font-size: 20px;
-  line-height: 1.1;
+  font-size: 22px;
+  line-height: 1.05;
 }
 
 .detail,
@@ -61,22 +62,74 @@ h1 {
   line-height: 1.45;
 }
 
-.detail.error {
+.detail.error,
+.status.error {
   color: #fca5a5;
+}
+
+.controls {
+  display: grid;
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+select {
+  appearance: none;
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: inherit;
+}
+
+select:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .button {
   appearance: none;
   border: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 12px 14px;
   font: inherit;
   font-weight: 700;
   color: white;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+}
+
+.button-icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.button.primary {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-strong) 100%);
   box-shadow: 0 10px 20px rgba(239, 68, 68, 0.25);
-  cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.15s ease;
+}
+
+.button.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .button:hover {
@@ -94,6 +147,6 @@ h1 {
   transform: none;
 }
 
-.status.error {
-  color: #fca5a5;
+.button[hidden] {
+  display: none;
 }

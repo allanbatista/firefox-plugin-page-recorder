@@ -1,11 +1,14 @@
 # Firefox Page Recorder
 
-Firefox extension that records the visible area of the active tab and downloads the result locally.
+Firefox extension that records the visible area of the active tab, with optional microphone audio, and downloads the result locally as WebM.
 
 ## Features
 
-- Records only the visible viewport of the active tab.
-- Prefers MP4/H.264 and falls back to WebM/VP8 when MP4 is unavailable.
+- Records only the visible viewport of the active tab (`captureVisibleTab`).
+- Optional microphone audio.
+- Waits for a 3-second countdown before recording starts.
+- Downloads WebM via the native MediaRecorder pipeline (VP8 + Opus).
+- Remembers the last FPS choice locally.
 - Adjusts the encoder bitrate to the captured resolution.
 - Saves files with host-based names and timestamps.
 
@@ -15,16 +18,17 @@ Firefox extension that records the visible area of the active tab and downloads 
 2. Click `Load Temporary Add-on`.
 3. Select `manifest.json`.
 4. Open the page you want to record.
-5. Click the extension button and start recording.
-6. Click stop to download the file.
+5. Click the extension button.
+6. Choose audio mode and FPS.
+7. Click start, wait for the countdown, then stop to download WebM.
 
 ## Output
 
-- Filename: `domain-timestamp.mp4` or `domain-timestamp.webm`
-- Container: MP4 when supported, otherwise WebM
-- Codec: H.264 or VP8, depending on the Firefox and OS support
-- Capture rate: 8 fps
-- Bitrate: scaled from the capture resolution
+- Filename base: `domain-timestamp`
+- Container: WebM
+- Codec: VP8 + Opus (native browser MediaRecorder)
+- Capture rate: 5, 10, 15, 30, or 60 fps, with 5 fps as the default
+- Bitrate: scaled from the capture resolution and selected FPS
 
 ## Development
 
@@ -33,26 +37,30 @@ This repository has no build step. Edit the files in the repository root and rel
 Validation commands:
 
 ```bash
-node --check background.js
 node --check popup.js
+node --check recorder.js
 jq empty manifest.json
 ```
 
 ## Project Layout
 
 ```text
-background.js   Extension logic and recording pipeline
 popup.html      Popup markup
-popup.css       Popup styles
-popup.js        Popup state and messaging
+popup.css       Popup and recorder window styles
+popup.js        Settings, recorder window launcher
+recorder.html   Recorder window markup
+recorder.js     Recording pipeline (capture, mic, encode, download)
 manifest.json   Firefox extension manifest
 ```
 
 ## Limitations
 
-- The extension records the visible area only.
+- Records the visible area of the active tab only (not a free window picker).
+- Tab/system audio is not captured: Firefox blocks `getDisplayMedia` in extension pages for this flow.
+- Recording runs in a small dedicated window: Firefox refuses `getUserMedia` in background pages, and a mic track dies with the document that created it. Closing that window discards the take; use its stop button (or the toolbar popup) to finish.
+- Microphone audio is optional and prompts for permission on the recorder window.
 - Codec support depends on the installed Firefox build and operating system.
-- The popup UI is currently in Portuguese.
+- The UI is currently in Portuguese.
 
 ## License
 

@@ -19,8 +19,8 @@ jobs:
 
       - name: Validate JavaScript
         run: |
-          node --check background.js
           node --check popup.js
+          node --check recorder.js
 
       - name: Validate manifest
         run: node -e "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8'))"
