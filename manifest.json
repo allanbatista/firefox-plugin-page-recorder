@@ -27,6 +27,11 @@
   },
   "browser_action": {
     "default_title": "Firefox Page Recorder",
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon-page-recorder.svg",
+      "32": "assets/icons/icon-page-recorder.svg",
+      "48": "assets/icons/icon-page-recorder.svg"
+    }
   }
 }

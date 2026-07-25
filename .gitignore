@@ -11,3 +11,4 @@ web-ext-artifacts/
 *.xpi
 .memory/
 .features/
+.serena/

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Firefox Page Recorder</title>
+  <rect x="8" y="8" width="112" height="112" rx="28" fill="#172033"/>
+  <path d="M31 31h66a9 9 0 0 1 9 9v48a9 9 0 0 1-9 9H31a9 9 0 0 1-9-9V40a9 9 0 0 1 9-9Z" fill="#f8fafc"/>
+  <path d="M22 49h84v-9a9 9 0 0 0-9-9H31a9 9 0 0 0-9 9v9Z" fill="#94a3b8"/>
+  <circle cx="64" cy="73" r="20" fill="#e11d48"/>
+</svg>
