@@ -147,6 +147,7 @@ select:disabled {
   transform: none;
 }
 
-.button[hidden] {
-  display: none;
+/* display: grid/inline-flex above would otherwise beat the hidden attribute. */
+[hidden] {
+  display: none !important;
 }

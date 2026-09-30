@@ -13,11 +13,16 @@ const POLL_INTERVAL_MS = 500;
 let snapshotState = null;
 let pollingStarted = false;
 
+const AUDIO_MODES = ["none", "mic", "system", "mic-system"];
+
 function audioModeLabel(mode) {
-  if (mode === "mic" || mode === "tab-mic") {
-    return "Microfone";
+  if (mode === "mic-system") {
+    return "Microfone + som do sistema";
   }
-  return "Sem áudio";
+  if (mode === "system") {
+    return "Som do sistema";
+  }
+  return mode === "mic" ? "Microfone" : "Sem áudio";
 }
 
 function settingsStatus(mode, fps) {
@@ -44,9 +49,8 @@ function setSelectsDisabled(disabled) {
 }
 
 function syncBusySelects(state) {
-  if (state.audioMode === "none" || state.audioMode === "mic" || state.audioMode === "tab" || state.audioMode === "tab-mic") {
-    const value = state.audioMode === "mic" || state.audioMode === "tab-mic" ? "mic" : "none";
-    audioModeSelect.value = value;
+  if (AUDIO_MODES.includes(state.audioMode)) {
+    audioModeSelect.value = state.audioMode;
   }
   if (Number.isFinite(state.captureFps) && state.captureFps > 0) {
     captureFpsSelect.value = String(state.captureFps);
@@ -55,7 +59,7 @@ function syncBusySelects(state) {
 
 function renderReady() {
   title.textContent = "Pronto para gravar";
-  detail.textContent = "Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui o microfone.";
+  detail.textContent = "Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui microfone e o som do sistema (reuniões, vídeos).";
   detail.classList.remove("error");
   status.textContent = settingsStatus(audioModeSelect.value, captureFpsSelect.value);
   status.classList.remove("error");
@@ -218,7 +222,9 @@ async function startRecording() {
     const url = browser.runtime.getURL(
       `recorder.html?windowId=${tab.windowId}&fps=${Number(captureFpsSelect.value)}&audio=${audioModeSelect.value}`
     );
-    await browser.windows.create({ url, type: "popup", width: 380, height: 280 });
+    // System audio may need room for the output picker.
+    const height = audioModeSelect.value.includes("system") ? 400 : 280;
+    await browser.windows.create({ url, type: "popup", width: 380, height });
   } catch (error) {
     render({ error: error.message || String(error) });
   }

@@ -16,7 +16,15 @@
     <main class="shell">
       <p class="eyebrow">Firefox Page Recorder</p>
       <h1 id="title">Preparando gravação</h1>
-      <p id="detail" class="detail">Aguardando a permissão do microfone.</p>
+      <p id="detail" class="detail">Aguardando a permissão de áudio.</p>
+
+      <section id="devicePicker" class="controls" aria-label="Saída de áudio" hidden>
+        <label class="field" for="audioDevice">
+          <span>Saída para capturar</span>
+          <select id="audioDevice"></select>
+        </label>
+        <button id="confirmDevice" class="button primary"><span>Continuar</span></button>
+      </section>
 
       <button id="stop" class="button secondary" hidden>
         <img class="button-icon" src="assets/icons/icon-pause.svg" alt="" aria-hidden="true">

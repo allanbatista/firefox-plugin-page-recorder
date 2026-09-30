@@ -10,7 +10,7 @@
     <main class="shell">
       <p class="eyebrow">Firefox Page Recorder</p>
       <h1 id="title">Pronto para gravar</h1>
-      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui o microfone.</p>
+      <p id="detail" class="detail">Captura a área visível da aba ativa e salva em WebM. Opcionalmente inclui microfone e o som do sistema (reuniões, vídeos).</p>
 
       <section class="controls" aria-label="Configurações de gravação">
         <label class="field" for="audioMode">
@@ -18,6 +18,8 @@
           <select id="audioMode">
             <option value="none">Sem áudio</option>
             <option value="mic" selected>Microfone</option>
+            <option value="system">Som do sistema</option>
+            <option value="mic-system">Microfone + som do sistema</option>
           </select>
         </label>
 

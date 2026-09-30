@@ -14,10 +14,18 @@ const MIN_VIDEO_BITS_PER_SECOND = 2_500_000;
 const MAX_VIDEO_BITS_PER_SECOND = 16_000_000;
 const COUNTDOWN_SECONDS = 3;
 
+// Firefox has no tab-audio API (getDisplayMedia audio is bugzilla 1541425), so
+// "system" audio means the OS monitor/loopback input.
+const AUDIO_MODES = ["none", "mic", "system", "mic-system"];
+const MONITOR_LABEL = /monitor|loopback|stereo mix|what u hear|mixagem/i;
+
 const titleEl = document.getElementById("title");
 const detailEl = document.getElementById("detail");
 const statusEl = document.getElementById("status");
 const stopButton = document.getElementById("stop");
+const devicePicker = document.getElementById("devicePicker");
+const deviceSelect = document.getElementById("audioDevice");
+const confirmDeviceButton = document.getElementById("confirmDevice");
 
 const params = new URLSearchParams(location.search);
 const targetWindowId = Number(params.get("windowId"));
@@ -27,13 +35,23 @@ function normalizeCaptureFps(value) {
   return ALLOWED_FPS.includes(fps) ? fps : DEFAULT_CAPTURE_FPS;
 }
 
-// none | mic (legacy tab / tab-mic map to none / mic)
 function normalizeAudioMode(value) {
-  return value === "mic" || value === "tab-mic" ? "mic" : "none";
+  return AUDIO_MODES.includes(value) ? value : "none";
+}
+
+function audioModeLabel(mode) {
+  if (mode === "mic-system") {
+    return "Microfone + som do sistema";
+  }
+  if (mode === "system") {
+    return "Som do sistema";
+  }
+  return mode === "mic" ? "Microfone" : "Sem áudio";
 }
 
 const state = {
   preparing: true,
+  choosingDevice: false,
   countdownRemaining: 0,
   recording: false,
   exporting: false,
@@ -45,7 +63,7 @@ const state = {
 
 let canvas = null;
 let context = null;
-let micStream = null;
+let audioStreams = [];
 let audioContext = null;
 let audioDestination = null;
 let recorder = null;
@@ -89,11 +107,15 @@ function filenameFromUrl(url) {
   }
 }
 
-function chooseMimeType() {
+// Asking for opus without an audio track leaves Firefox muxing nothing at all
+// (bugzilla 1881826): no dataavailable, no file.
+function chooseMimeType(hasAudio) {
   if (typeof MediaRecorder === "undefined" || typeof MediaRecorder.isTypeSupported !== "function") {
     return "";
   }
-  return MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  return MIME_TYPES
+    .filter((type) => hasAudio || !type.includes("opus"))
+    .find((type) => MediaRecorder.isTypeSupported(type)) || "";
 }
 
 function estimateVideoBitsPerSecond(width, height, fps) {
@@ -116,12 +138,12 @@ function setBadge(recording) {
 }
 
 function cleanup() {
-  if (micStream) {
-    for (const track of micStream.getTracks()) {
+  for (const stream of audioStreams) {
+    for (const track of stream.getTracks()) {
       track.stop();
     }
-    micStream = null;
   }
+  audioStreams = [];
   if (audioContext) {
     audioContext.close().catch(() => {});
     audioContext = null;
@@ -137,17 +159,20 @@ async function closeSelf() {
 }
 
 function render() {
+  devicePicker.hidden = !state.choosingDevice;
+
   if (state.error) {
     titleEl.textContent = "Erro";
     detailEl.textContent = state.error;
     detailEl.classList.add("error");
     statusEl.textContent = "Feche esta janela e tente novamente.";
     stopButton.hidden = true;
+    devicePicker.hidden = true;
     return;
   }
 
   detailEl.classList.remove("error");
-  statusEl.textContent = `Áudio: ${state.audioMode === "mic" ? "Microfone" : "Sem áudio"} · FPS: ${state.captureFps}`;
+  statusEl.textContent = `Áudio: ${audioModeLabel(state.audioMode)} · FPS: ${state.captureFps}`;
 
   if (state.exporting) {
     titleEl.textContent = "Finalizando WebM";
@@ -164,6 +189,13 @@ function render() {
     return;
   }
 
+  if (state.choosingDevice) {
+    titleEl.textContent = "Escolha a saída de áudio";
+    detailEl.textContent = "Selecione o monitor (loopback) da saída onde a reunião está tocando.";
+    stopButton.hidden = true;
+    return;
+  }
+
   if (state.countdownRemaining > 0) {
     titleEl.textContent = `Iniciando em ${state.countdownRemaining}s`;
     detailEl.textContent = "A gravação começa quando o contador chegar a zero.";
@@ -172,20 +204,82 @@ function render() {
   }
 
   titleEl.textContent = "Preparando gravação";
-  detailEl.textContent = "Aguardando a permissão do microfone.";
+  detailEl.textContent = "Aguardando a permissão de áudio.";
   stopButton.hidden = true;
 }
 
-async function prepareMicAudio() {
+async function addAudioSource(constraints) {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: constraints, video: false });
+  audioStreams.push(stream);
+
+  if (!audioContext) {
+    audioContext = new AudioContext();
+    audioDestination = audioContext.createMediaStreamDestination();
+  }
+  audioContext.createMediaStreamSource(stream).connect(audioDestination);
+  await audioContext.resume();
+  return stream;
+}
+
+function askMonitorDevice(devices) {
+  deviceSelect.replaceChildren(...devices.map((device) => new Option(device.label, device.deviceId)));
+  state.choosingDevice = true;
+  render();
+
+  return new Promise((resolve) => {
+    confirmDeviceButton.addEventListener("click", () => {
+      state.choosingDevice = false;
+      render();
+      resolve(deviceSelect.value);
+    }, { once: true });
+  });
+}
+
+// Device labels stay blank until some capture permission is granted, so the
+// monitor can only be looked up after the first getUserMedia call.
+async function monitorDeviceId() {
+  const inputs = (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "audioinput");
+  const monitors = inputs.filter((device) => MONITOR_LABEL.test(device.label));
+
+  if (monitors.length === 1) {
+    return monitors[0].deviceId;
+  }
+  if (inputs.length === 0) {
+    throw new Error("Nenhuma entrada de áudio disponível para capturar o som do sistema.");
+  }
+  // Several outputs, or a loopback this heuristic cannot name (VB-Cable,
+  // BlackHole): the user picks. Likely candidates first.
+  return askMonitorDevice([...monitors, ...inputs.filter((device) => !monitors.includes(device))]);
+}
+
+async function prepareAudio() {
+  if (state.audioMode === "none") {
+    return;
+  }
   if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== "function") {
-    throw new Error("Este Firefox não suporta captura de microfone neste fluxo.");
+    throw new Error("Este Firefox não suporta captura de áudio neste fluxo.");
   }
 
-  micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-  audioContext = new AudioContext();
-  audioDestination = audioContext.createMediaStreamDestination();
-  audioContext.createMediaStreamSource(micStream).connect(audioDestination);
-  await audioContext.resume();
+  if (state.audioMode === "mic" || state.audioMode === "mic-system") {
+    await addAudioSource(true);
+  } else {
+    // Throwaway grant: it is what unlocks the device labels read below.
+    const probe = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    for (const track of probe.getTracks()) {
+      track.stop();
+    }
+  }
+
+  if (state.audioMode === "mic") {
+    return;
+  }
+
+  await addAudioSource({
+    deviceId: { exact: await monitorDeviceId() },
+    echoCancellation: false,
+    noiseSuppression: false,
+    autoGainControl: false
+  });
 }
 
 async function captureAndPaint() {
@@ -289,11 +383,6 @@ function stop() {
 
 async function main() {
   try {
-    const mimeType = chooseMimeType();
-    if (!mimeType) {
-      throw new Error("Este Firefox não suporta gravação de vídeo neste sistema.");
-    }
-
     const [tab] = await browser.tabs.query({ active: true, windowId: targetWindowId });
     if (!tab) {
       throw new Error("Nenhuma aba ativa encontrada na janela de origem.");
@@ -301,11 +390,14 @@ async function main() {
     state.filename = filenameFromUrl(tab.url || "");
     render();
 
-    if (state.audioMode === "mic") {
-      await prepareMicAudio();
-    }
+    await prepareAudio();
     if (stopRequested) {
       return;
+    }
+
+    const mimeType = chooseMimeType(Boolean(audioDestination));
+    if (!mimeType) {
+      throw new Error("Este Firefox não suporta gravação de vídeo neste sistema.");
     }
 
     await captureAndPaint();
@@ -324,6 +416,7 @@ async function main() {
     startRecorder(mimeType);
   } catch (error) {
     state.preparing = false;
+    state.choosingDevice = false;
     state.countdownRemaining = 0;
     state.error = error.message || String(error);
     cleanup();

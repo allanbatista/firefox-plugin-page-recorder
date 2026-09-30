@@ -1,11 +1,11 @@
 # Firefox Page Recorder
 
-Firefox extension that records the visible area of the active tab, with optional microphone audio, and downloads the result locally as WebM.
+Firefox extension that records the visible area of the active tab, with optional microphone and system audio, and downloads the result locally as WebM.
 
 ## Features
 
 - Records only the visible viewport of the active tab (`captureVisibleTab`).
-- Optional microphone audio.
+- Optional audio: microphone, system output (meetings, videos), or both mixed.
 - Waits for a 3-second countdown before recording starts.
 - Downloads WebM via the native MediaRecorder pipeline (VP8 + Opus).
 - Remembers the last FPS choice locally.
@@ -56,9 +56,11 @@ manifest.json   Firefox extension manifest
 ## Limitations
 
 - Records the visible area of the active tab only (not a free window picker).
-- Tab/system audio is not captured: Firefox blocks `getDisplayMedia` in extension pages for this flow.
+- Per-tab audio is not captured: Firefox still has no audio in `getDisplayMedia` ([bug 1541425](https://bugzilla.mozilla.org/show_bug.cgi?id=1541425)). "System audio" records the OS monitor/loopback input instead, so it captures everything that is playing, not just the recorded tab.
+  - Linux (PulseAudio/PipeWire) exposes `Monitor of <output>` out of the box; Windows needs Stereo Mix or VB-Cable, macOS needs BlackHole or similar.
+  - Firefox only reveals device labels after a capture permission is granted, so the recorder window asks for microphone access first (the track is discarded in system-only mode) and then prompts again for the monitor device.
 - Recording runs in a small dedicated window: Firefox refuses `getUserMedia` in background pages, and a mic track dies with the document that created it. Closing that window discards the take; use its stop button (or the toolbar popup) to finish.
-- Microphone audio is optional and prompts for permission on the recorder window.
+- Audio is optional and prompts for permission on the recorder window.
 - Codec support depends on the installed Firefox build and operating system.
 - The UI is currently in Portuguese.
 
